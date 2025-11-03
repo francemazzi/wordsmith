@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "🧪 docsmith - Test Runner"
+echo "🧪 wordsmith - Test Runner"
 echo ""
 echo "Running full test suite..."
 npm test
