@@ -74,7 +74,7 @@ const test2Data = {
 };
 
 async function runTests() {
-  console.log("🧪 wordsmith - Test Manuale\n");
+  console.log("🧪 wordsmith-ts - Test Manuale\n");
 
   // Create output directory
   if (!existsSync("./output")) {

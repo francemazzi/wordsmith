@@ -1,9 +1,9 @@
-# wordsmith
+# wordsmith-ts
 
 > 🧩 A lightweight functional Node.js library to extract and replace variables in Word (.docx) files with support for dynamic table generation.
 
-[![npm version](https://img.shields.io/npm/v/@frasma/wordsmith.svg?style=flat-square)](https://www.npmjs.com/package/@frasma/wordsmith)
-[![License](https://img.shields.io/npm/l/@frasma/wordsmith.svg?style=flat-square)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/@frasma/wordsmith-ts.svg?style=flat-square)](https://www.npmjs.com/package/@frasma/wordsmith-ts)
+[![License](https://img.shields.io/npm/l/@frasma/wordsmith-ts.svg?style=flat-square)](LICENSE)
 
 ---
 
@@ -22,14 +22,14 @@
 ## 🚀 Installation
 
 ```bash
-npm install @frasma/wordsmith
+npm install @frasma/wordsmith-ts
 ```
 
 Or with other package managers:
 
 ```bash
-yarn add @frasma/wordsmith
-pnpm add @frasma/wordsmith
+yarn add @frasma/wordsmith-ts
+pnpm add @frasma/wordsmith-ts
 ```
 
 ---
@@ -39,7 +39,7 @@ pnpm add @frasma/wordsmith
 ### Basic Example
 
 ```javascript
-import { extract, replace, process } from "@frasma/wordsmith";
+import { extract, replace, process } from "@frasma/wordsmith-ts";
 
 // Extract variables from a template
 const result = await extract("./template.docx");
@@ -308,7 +308,7 @@ const output = await replace(buffer, data);
 ### Functional Composition
 
 ```javascript
-import { pipe } from "@frasma/wordsmith/utils";
+import { pipe } from "@frasma/wordsmith-ts/utils";
 
 const processDocument = pipe(
   readTemplate,
@@ -360,7 +360,7 @@ const data = {
 ### Data Preparation
 
 ```javascript
-// Good: Prepare data before passing to wordsmith
+// Good: Prepare data before passing to wordsmith-ts
 const data = {
   date: new Date().toLocaleDateString("it-IT"),
   total: formatCurrency(totalAmount),
@@ -396,7 +396,7 @@ npm run build
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/wordsmith.git
+git clone https://github.com/yourusername/wordsmith-ts.git
 
 # Install dependencies
 npm install
@@ -460,9 +460,9 @@ MIT © Francesco
 
 ## 🔗 Links
 
-- [npm package](https://www.npmjs.com/package/@frasma/wordsmith)
-- [GitHub repository](https://github.com/yourusername/wordsmith)
-- [Issue tracker](https://github.com/yourusername/wordsmith/issues)
+- [npm package](https://www.npmjs.com/package/@frasma/wordsmith-ts)
+- [GitHub repository](https://github.com/yourusername/wordsmith-ts)
+- [Issue tracker](https://github.com/yourusername/wordsmith-ts/issues)
 
 ---
 
