@@ -2,8 +2,8 @@
 
 > 🧩 A lightweight functional Node.js library to extract and replace variables in Word (.docx) files with support for dynamic table generation.
 
-[![npm version](https://img.shields.io/npm/v/wordsmith-ts.svg?style=flat-square)](https://www.npmjs.com/package/@frasma/wordsmith-ts)
-[![License](https://img.shields.io/npm/l/@frasma/wordsmith-ts.svg?style=flat-square)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/wordsmith-ts.svg?style=flat-square)](https://www.npmjs.com/package/wordsmith-ts)
+[![License](https://img.shields.io/npm/l/wordsmith-ts.svg?style=flat-square)](LICENSE)
 
 ---
 
