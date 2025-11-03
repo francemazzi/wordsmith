@@ -436,34 +436,4 @@ MIT © Francesco
 
 ---
 
-## 🐛 Troubleshooting
-
-### Variables not found
-
-- Ensure variables use correct syntax: `{{variableName}}`
-- Check for hidden formatting in Word (try retyping the variable)
-- Variables are case-sensitive
-
-### Tables not expanding
-
-- Verify table variable syntax: `{{arrayName.fieldName}}`
-- Ensure data is an array: `data.arrayName = [...]`
-- Check that array name matches exactly
-
-### File corruption
-
-- Ensure input file is a valid .docx (not .doc)
-- Don't manually edit the XML
-- Keep backups of your templates
-
----
-
-## 🔗 Links
-
-- [npm package](https://www.npmjs.com/package/@frasma/wordsmith-ts)
-- [GitHub repository](https://github.com/yourusername/wordsmith-ts)
-- [Issue tracker](https://github.com/yourusername/wordsmith-ts/issues)
-
----
-
-Made with ❤️ using functional programming principles
+Made with ❤️ by frasma using functional programming principles
