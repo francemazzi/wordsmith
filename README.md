@@ -22,14 +22,14 @@
 ## 🚀 Installation
 
 ```bash
-npm install @frasma/wordsmith-ts
+npm install wordsmith-ts
 ```
 
 Or with other package managers:
 
 ```bash
-yarn add @frasma/wordsmith-ts
-pnpm add @frasma/wordsmith-ts
+yarn add wordsmith-ts
+pnpm add wordsmith-ts
 ```
 
 ---
@@ -39,7 +39,7 @@ pnpm add @frasma/wordsmith-ts
 ### Basic Example
 
 ```javascript
-import { extract, replace, process } from "@frasma/wordsmith-ts";
+import { extract, replace, process } from "wordsmith-ts";
 
 // Extract variables from a template
 const result = await extract("./template.docx");
@@ -308,7 +308,7 @@ const output = await replace(buffer, data);
 ### Functional Composition
 
 ```javascript
-import { pipe } from "@frasma/wordsmith-ts/utils";
+import { pipe } from "wordsmith-ts/utils";
 
 const processDocument = pipe(
   readTemplate,
