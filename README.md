@@ -32,6 +32,28 @@ yarn add wordsmith-ts
 pnpm add wordsmith-ts
 ```
 
+### Module Compatibility
+
+**wordsmith-ts** supporta sia **ES Modules (ESM)** che **CommonJS (CJS)**, rendendolo compatibile con qualsiasi tipo di progetto Node.js.
+
+#### ES Modules (ESM)
+
+```javascript
+import { extract, replace, process } from "wordsmith-ts";
+
+// Your code here...
+```
+
+#### CommonJS (CJS)
+
+```javascript
+const { extract, replace, process } = require("wordsmith-ts");
+
+// Your code here...
+```
+
+Il pacchetto rileva automaticamente il sistema di moduli del tuo progetto e carica il formato appropriato.
+
 ---
 
 ## 📖 Usage
