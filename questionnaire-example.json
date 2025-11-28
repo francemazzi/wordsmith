@@ -1,0 +1,168 @@
+{
+  "questionnaire": {
+    "id": "template-questionnaire-001",
+    "title": "Questionario per Template Documento",
+    "description": "Raccogli dati per generare documento Word"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Qual è il nome del cliente?",
+      "type": "text",
+      "variableType": "SIMPLE_TEXT",
+      "variableName": "customerName",
+      "required": true,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 100
+      },
+      "response": {
+        "value": "Mario Rossi",
+        "mappedTo": {
+          "variable": "customerName",
+          "syntax": "{{customerName}}"
+        }
+      }
+    },
+    {
+      "id": "q2",
+      "question": "La data del documento",
+      "type": "text",
+      "variableType": "SIMPLE_TEXT",
+      "variableName": "documentDate",
+      "required": true,
+      "inputType": "date",
+      "response": {
+        "value": "2025-01-15",
+        "mappedTo": {
+          "variable": "documentDate",
+          "syntax": "{{documentDate}}"
+        }
+      }
+    },
+    {
+      "id": "q3",
+      "question": "Informazioni cliente (nome, email)",
+      "type": "object",
+      "variableType": "OBJECT_PROPERTY",
+      "variableName": "customer",
+      "required": false,
+      "fields": [
+        {
+          "name": "name",
+          "label": "Nome",
+          "type": "text",
+          "syntax": "{{customer.name}}"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "email",
+          "syntax": "{{customer.email}}"
+        }
+      ],
+      "response": {
+        "value": {
+          "name": "Mario Rossi",
+          "email": "mario@example.com"
+        },
+        "mappedTo": {
+          "variable": "customer",
+          "syntax": "{{customer.name}}, {{customer.email}}"
+        }
+      }
+    },
+    {
+      "id": "q4",
+      "question": "Il documento è approvato?",
+      "type": "boolean",
+      "variableType": "CONDITIONAL_BOOLEAN",
+      "variableName": "isApproved",
+      "required": false,
+      "response": {
+        "value": true,
+        "mappedTo": {
+          "variable": "isApproved",
+          "syntax": "{{#if isApproved}}...{{/if}}"
+        }
+      }
+    },
+    {
+      "id": "q5",
+      "question": "Il pagamento è stato ricevuto?",
+      "type": "boolean",
+      "variableType": "CONDITIONAL_WITH_ELSE",
+      "variableName": "isPaid",
+      "required": false,
+      "response": {
+        "value": true,
+        "mappedTo": {
+          "variable": "isPaid",
+          "syntax": "{{#if isPaid}}...{{else}}...{{/if}}"
+        }
+      }
+    },
+    {
+      "id": "q6",
+      "question": "Inserisci i prodotti ordinati",
+      "type": "table",
+      "variableType": "TABLE_ARRAY",
+      "variableName": "products",
+      "required": false,
+      "columns": [
+        {
+          "name": "name",
+          "label": "Nome Prodotto",
+          "type": "text",
+          "syntax": "{{products.name}}",
+          "required": true
+        },
+        {
+          "name": "qty",
+          "label": "Quantità",
+          "type": "number",
+          "syntax": "{{products.qty}}",
+          "required": true
+        },
+        {
+          "name": "price",
+          "label": "Prezzo",
+          "type": "text",
+          "syntax": "{{products.price}}",
+          "required": true
+        }
+      ],
+      "response": {
+        "value": [
+          { "name": "Laptop", "qty": 2, "price": "1,200 €" },
+          { "name": "Mouse", "qty": 5, "price": "25 €" }
+        ],
+        "mappedTo": {
+          "variable": "products",
+          "syntax": "{{products.name}}, {{products.qty}}, {{products.price}}",
+          "indexSyntax": "{{products.#}}"
+        }
+      }
+    }
+  ],
+  "mappedData": {
+    "customerName": "Mario Rossi",
+    "documentDate": "2025-01-15",
+    "customer": {
+      "name": "Mario Rossi",
+      "email": "mario@example.com"
+    },
+    "isApproved": true,
+    "isPaid": true,
+    "products": [
+      { "name": "Laptop", "qty": 2, "price": "1,200 €" },
+      { "name": "Mouse", "qty": 5, "price": "25 €" }
+    ]
+  },
+  "templateVariables": {
+    "simple": ["customerName", "documentDate"],
+    "objects": ["customer"],
+    "conditionals": ["isApproved", "isPaid"],
+    "tables": ["products"]
+  }
+}
