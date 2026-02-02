@@ -132,3 +132,54 @@ export const updateCellText = (cell: any, newText: string): any => {
       updatedParagraphs.length === 1 ? updatedParagraphs[0] : updatedParagraphs,
   };
 };
+
+/**
+ * Get the root element from a header or footer XML document
+ * Headers use w:hdr, footers use w:ftr
+ * @param xmlDoc - Parsed XML document
+ * @returns The root element or null if not found
+ */
+export const getHeaderFooterRoot = (xmlDoc: any): any | null => {
+  return xmlDoc["w:hdr"] || xmlDoc["w:ftr"] || null;
+};
+
+/**
+ * Get the root key name for a header or footer XML document
+ * @param xmlDoc - Parsed XML document
+ * @returns "w:hdr" or "w:ftr" or null if not found
+ */
+export const getHeaderFooterRootKey = (xmlDoc: any): string | null => {
+  if (xmlDoc["w:hdr"]) return "w:hdr";
+  if (xmlDoc["w:ftr"]) return "w:ftr";
+  return null;
+};
+
+/**
+ * Extract paragraphs from a header or footer XML document
+ * @param xmlDoc - Parsed XML document (header or footer)
+ * @returns Array of paragraph elements
+ */
+export const extractParagraphsFromHeaderFooter = (xmlDoc: any): any[] => {
+  const root = getHeaderFooterRoot(xmlDoc);
+  if (!root) return [];
+
+  const paragraphs = root["w:p"];
+  if (!paragraphs) return [];
+
+  return Array.isArray(paragraphs) ? paragraphs : [paragraphs];
+};
+
+/**
+ * Extract tables from a header or footer XML document
+ * @param xmlDoc - Parsed XML document (header or footer)
+ * @returns Array of table elements
+ */
+export const extractTablesFromHeaderFooter = (xmlDoc: any): any[] => {
+  const root = getHeaderFooterRoot(xmlDoc);
+  if (!root) return [];
+
+  const tables = root["w:tbl"];
+  if (!tables) return [];
+
+  return Array.isArray(tables) ? tables : [tables];
+};

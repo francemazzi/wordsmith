@@ -1,11 +1,21 @@
 import { writeFile } from "fs/promises";
 import { read } from "./readers.js";
-import { unzip, getDocumentXml, updateDocumentXml, zip } from "./zip.js";
+import {
+  unzip,
+  getDocumentXml,
+  getHeaderFiles,
+  getFooterFiles,
+  updateDocumentXml,
+  updateMultipleXmlFiles,
+  zip,
+} from "./zip.js";
 import {
   parseXml,
   xmlToString,
   extractParagraphs,
   extractTables,
+  extractParagraphsFromHeaderFooter,
+  extractTablesFromHeaderFooter,
 } from "./xml.js";
 import {
   extractTextFromParagraph,
@@ -14,12 +24,31 @@ import {
   extractTextFromCell,
 } from "./xml.js";
 import { getAllVariables, replaceVariables } from "./variables.js";
-import { replaceInAllTables } from "./tables.js";
+import { replaceInAllTables, replaceInHeaderFooterTables } from "./tables.js";
 import {
   processConditionals,
   extractConditionalVariables,
 } from "./conditionals.js";
 import type { ExtractResult, ReplaceData } from "./types.js";
+
+/**
+ * Helper function to extract text from tables
+ * @param tables - Array of table elements
+ * @returns Array of text strings from all cells
+ */
+const extractTextFromTables = (tables: any[]): string[] => {
+  const tableTexts: string[] = [];
+  tables.forEach((table) => {
+    const rows = extractRows(table);
+    rows.forEach((row) => {
+      const cells = extractCells(row);
+      cells.forEach((cell) => {
+        tableTexts.push(extractTextFromCell(cell));
+      });
+    });
+  });
+  return tableTexts;
+};
 
 /**
  * Extract variables from a .docx file
@@ -32,26 +61,48 @@ export const extract = async (
   const buffer = await read(source);
 
   const files = await unzip(buffer);
-  const documentXml = getDocumentXml(files);
 
+  // Extract from main document
+  const documentXml = getDocumentXml(files);
   const xmlDoc = parseXml(documentXml);
 
   const paragraphs = extractParagraphs(xmlDoc);
   const paragraphTexts = paragraphs.map(extractTextFromParagraph);
 
   const tables = extractTables(xmlDoc);
-  const tableTexts: string[] = [];
-  tables.forEach((table) => {
-    const rows = extractRows(table);
-    rows.forEach((row) => {
-      const cells = extractCells(row);
-      cells.forEach((cell) => {
-        tableTexts.push(extractTextFromCell(cell));
-      });
-    });
-  });
+  const tableTexts = extractTextFromTables(tables);
 
-  const fullText = [...paragraphTexts, ...tableTexts].join(" ");
+  // Extract from headers
+  const headerFiles = getHeaderFiles(files);
+  const headerTexts: string[] = [];
+  for (const [, content] of Object.entries(headerFiles)) {
+    const headerXml = parseXml(content);
+    const headerParagraphs = extractParagraphsFromHeaderFooter(headerXml);
+    headerTexts.push(...headerParagraphs.map(extractTextFromParagraph));
+
+    const headerTables = extractTablesFromHeaderFooter(headerXml);
+    headerTexts.push(...extractTextFromTables(headerTables));
+  }
+
+  // Extract from footers
+  const footerFiles = getFooterFiles(files);
+  const footerTexts: string[] = [];
+  for (const [, content] of Object.entries(footerFiles)) {
+    const footerXml = parseXml(content);
+    const footerParagraphs = extractParagraphsFromHeaderFooter(footerXml);
+    footerTexts.push(...footerParagraphs.map(extractTextFromParagraph));
+
+    const footerTables = extractTablesFromHeaderFooter(footerXml);
+    footerTexts.push(...extractTextFromTables(footerTables));
+  }
+
+  // Combine all text
+  const fullText = [
+    ...paragraphTexts,
+    ...tableTexts,
+    ...headerTexts,
+    ...footerTexts,
+  ].join(" ");
 
   const variables = getAllVariables(fullText);
 
@@ -113,19 +164,43 @@ export const replace = async (
   const buffer = await read(source);
 
   const files = await unzip(buffer);
+
+  // Process main document
   const documentXml = getDocumentXml(files);
-
   let xmlDoc = parseXml(documentXml);
-
   xmlDoc = replaceInAllTables(xmlDoc, data);
-
   let processedXml = xmlToString(xmlDoc);
-
   processedXml = processConditionals(processedXml, data);
-
   processedXml = replaceVariables(data)(processedXml);
 
-  const updatedFiles = updateDocumentXml(processedXml)(files);
+  // Process headers
+  const headerFiles = getHeaderFiles(files);
+  const processedHeaders: Record<string, string> = {};
+  for (const [filename, content] of Object.entries(headerFiles)) {
+    let headerXmlDoc = parseXml(content);
+    headerXmlDoc = replaceInHeaderFooterTables(headerXmlDoc, data);
+    let processedHeaderXml = xmlToString(headerXmlDoc);
+    processedHeaderXml = processConditionals(processedHeaderXml, data);
+    processedHeaderXml = replaceVariables(data)(processedHeaderXml);
+    processedHeaders[filename] = processedHeaderXml;
+  }
+
+  // Process footers
+  const footerFiles = getFooterFiles(files);
+  const processedFooters: Record<string, string> = {};
+  for (const [filename, content] of Object.entries(footerFiles)) {
+    let footerXmlDoc = parseXml(content);
+    footerXmlDoc = replaceInHeaderFooterTables(footerXmlDoc, data);
+    let processedFooterXml = xmlToString(footerXmlDoc);
+    processedFooterXml = processConditionals(processedFooterXml, data);
+    processedFooterXml = replaceVariables(data)(processedFooterXml);
+    processedFooters[filename] = processedFooterXml;
+  }
+
+  // Update all files
+  let updatedFiles = updateDocumentXml(processedXml)(files);
+  updatedFiles = updateMultipleXmlFiles(processedHeaders)(updatedFiles);
+  updatedFiles = updateMultipleXmlFiles(processedFooters)(updatedFiles);
 
   return await zip(updatedFiles);
 };

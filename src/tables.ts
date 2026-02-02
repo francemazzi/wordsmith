@@ -3,6 +3,8 @@ import {
   extractCells,
   extractTextFromCell,
   updateCellText,
+  getHeaderFooterRoot,
+  getHeaderFooterRootKey,
 } from "./xml.js";
 import {
   hasTableVariables,
@@ -135,4 +137,39 @@ export const replaceInAllTables = (xmlDoc: any, data: ReplaceData): any => {
   const processedTables = processAllTables(tableArray, data);
 
   return updateTablesInDocument(xmlDoc, processedTables);
+};
+
+/**
+ * Replace table variables in header or footer XML document
+ * @param xmlDoc - Parsed XML document (header or footer)
+ * @param data - Data to replace variables with
+ * @returns Updated XML document
+ */
+export const replaceInHeaderFooterTables = (
+  xmlDoc: any,
+  data: ReplaceData
+): any => {
+  const root = getHeaderFooterRoot(xmlDoc);
+  const rootKey = getHeaderFooterRootKey(xmlDoc);
+
+  if (!root || !rootKey) return xmlDoc;
+
+  const tables = root["w:tbl"];
+  if (!tables) return xmlDoc;
+
+  const tableArray = Array.isArray(tables) ? tables : [tables];
+  const processedTables = processAllTables(tableArray, data);
+
+  if (!processedTables || processedTables.length === 0) {
+    return xmlDoc;
+  }
+
+  return {
+    ...xmlDoc,
+    [rootKey]: {
+      ...root,
+      "w:tbl":
+        processedTables.length === 1 ? processedTables[0] : processedTables,
+    },
+  };
 };

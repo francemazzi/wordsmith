@@ -37,6 +37,44 @@ export const updateDocumentXml =
     "word/document.xml": documentXml,
   });
 
+// Patterns for identifying header and footer files
+const HEADER_PATTERN = /^word\/header\d+\.xml$/;
+const FOOTER_PATTERN = /^word\/footer\d+\.xml$/;
+
+/**
+ * Get all header files from the docx
+ * @param files - DocxFiles object
+ * @returns Record of header filenames to their XML content
+ */
+export const getHeaderFiles = (files: DocxFiles): Record<string, string> => {
+  return Object.entries(files)
+    .filter(([name]) => HEADER_PATTERN.test(name))
+    .reduce((acc, [name, content]) => ({ ...acc, [name]: content }), {});
+};
+
+/**
+ * Get all footer files from the docx
+ * @param files - DocxFiles object
+ * @returns Record of footer filenames to their XML content
+ */
+export const getFooterFiles = (files: DocxFiles): Record<string, string> => {
+  return Object.entries(files)
+    .filter(([name]) => FOOTER_PATTERN.test(name))
+    .reduce((acc, [name, content]) => ({ ...acc, [name]: content }), {});
+};
+
+/**
+ * Update multiple XML files at once
+ * @param updates - Record of filenames to their new XML content
+ * @returns Function that takes DocxFiles and returns updated DocxFiles
+ */
+export const updateMultipleXmlFiles =
+  (updates: Record<string, string>) =>
+  (files: DocxFiles): DocxFiles => ({
+    ...files,
+    ...updates,
+  });
+
 export const zip = async (files: DocxFiles): Promise<Buffer> => {
   try {
     const jszip = new JSZip();
