@@ -6,7 +6,7 @@ const parserOptions = {
   textNodeName: "#text",
   parseAttributeValue: false,
   parseTagValue: false,
-  trimValues: true,
+  trimValues: false,
   cdataPropName: "__cdata",
   commentPropName: "__comment",
   preserveOrder: false,
@@ -104,9 +104,14 @@ export const extractTextFromCell = (cell: any): string => {
 };
 
 export const updateParagraphText = (paragraph: any, newText: string): any => {
+  const runs = paragraph["w:r"];
+  const runArray = Array.isArray(runs) ? runs : runs ? [runs] : [];
+  const firstRun = runArray[0] || {};
+
   return {
     ...paragraph,
     "w:r": {
+      ...firstRun,
       "w:t": {
         "@_xml:space": "preserve",
         "#text": newText,
