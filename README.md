@@ -12,7 +12,9 @@
 - 📄 **Read and parse .docx files** - Works with file paths or buffers
 - 🔍 **Extract variables** - Find all `{{variables}}` in your documents
 - 🔁 **Replace dynamically** - Simple text and complex table variables
-- 📊 **Dynamic tables** - Expand table rows from arrays
+- 📊 **Dynamic tables** - Expand table rows or columns from arrays
+- 🔄 **Transposed tables** - Support for tables with headers in the first column
+- 🧮 **Grid tables** - Tables with headers on both first row and first column
 - 🎯 **Functional design** - Pure functions, composable, testable
 - ⚡️ **TypeScript support** - Full type definitions included
 - 🚀 **Zero configuration** - Works out of the box
@@ -113,7 +115,7 @@ await replace("./template.docx", data);
 
 ### Table Variables (Dynamic Rows)
 
-Create a template row in your Word table with `{{arrayName.fieldName}}`:
+Create a template row in your Word table with `{{arrayName.fieldName}}`. Headers go in the first row, variables in a single template row below:
 
 ```
 ┌────────────┬─────────┬────────┬─────────┐
@@ -125,7 +127,7 @@ Create a template row in your Word table with `{{arrayName.fieldName}}`:
 
 The library will:
 
-1. Detect the template row
+1. Detect the template row (the one containing `{{array.field}}` variables)
 2. Clone it for each item in the array
 3. Replace variables with actual values
 
@@ -153,13 +155,92 @@ await replace("./invoice.docx", data);
 └────────────┴─────────┴────────┴─────────┘
 ```
 
+**Detection rule:** When a single row contains `{{array.field}}` variables, the library expands **rows** vertically.
+
+### Transposed Table Variables (Dynamic Columns)
+
+When headers are in the **first column** instead of the first row, the library automatically detects the transposed layout and expands **columns** horizontally:
+
+```
+┌────────────┬──────────────────┐
+│ Product    │ {{items.name}}   │
+├────────────┼──────────────────┤
+│ Qty        │ {{items.qty}}    │
+├────────────┼──────────────────┤
+│ Price      │ {{items.price}}  │
+└────────────┴──────────────────┘
+```
+
+```javascript
+const data = {
+  items: [
+    { name: "Laptop", qty: 2, price: "1,200" },
+    { name: "Mouse", qty: 5, price: "25" },
+    { name: "Keyboard", qty: 3, price: "80" },
+  ],
+};
+
+await replace("./template.docx", data);
+```
+
+**Result:**
+
+```
+┌────────────┬─────────┬─────────┬──────────┐
+│ Product    │ Laptop  │ Mouse   │ Keyboard │
+├────────────┼─────────┼─────────┼──────────┤
+│ Qty        │ 2       │ 5       │ 3        │
+├────────────┼─────────┼─────────┼──────────┤
+│ Price      │ 1,200   │ 25      │ 80       │
+└────────────┴─────────┴─────────┴──────────┘
+```
+
+**Detection rule:** When **multiple rows** contain `{{array.field}}` variables referencing the **same array**, the library expands **columns** horizontally.
+
+### Grid Tables (Headers on Both Axes)
+
+For tables with headers on both the first row **and** the first column, use **object property access** with a different object name per row:
+
+```
+┌──────────────────────────┬──────────────────────────┬───────────────────┐
+│                          │ Certificato              │ Note              │
+├──────────────────────────┼──────────────────────────┼───────────────────┤
+│ La cucina è sicura?      │ {{cucina.certificato}}   │ {{cucina.note}}   │
+├──────────────────────────┼──────────────────────────┼───────────────────┤
+│ Ha superato il test?     │ {{test.certificato}}     │ {{test.note}}     │
+└──────────────────────────┴──────────────────────────┴───────────────────┘
+```
+
+```javascript
+const data = {
+  cucina: { certificato: "Sì", note: "Conforme alle normative" },
+  test: { certificato: "No", note: "Da ripetere entro 30gg" },
+};
+
+await replace("./checklist.docx", data);
+```
+
+**Result:**
+
+```
+┌──────────────────────────┬──────────────────────────┬─────────────────────────┐
+│                          │ Certificato              │ Note                    │
+├──────────────────────────┼──────────────────────────┼─────────────────────────┤
+│ La cucina è sicura?      │ Sì                       │ Conforme alle normative │
+├──────────────────────────┼──────────────────────────┼─────────────────────────┤
+│ Ha superato il test?     │ No                       │ Da ripetere entro 30gg  │
+└──────────────────────────┴──────────────────────────┴─────────────────────────┘
+```
+
+**Key:** Each row uses a **different object name** (e.g. `cucina`, `test`). The library recognizes they are objects (not arrays) and performs direct variable substitution without any row/column expansion.
+
 ### Special Variables
 
-- `{{arrayName.#}}` or `{{arrayName.index}}` - Row number (1, 2, 3...)
+- `{{arrayName.#}}` or `{{arrayName.index}}` - Row/column number (1, 2, 3...)
 
 ### Object Property Access
 
-Access properties of single objects (not arrays):
+Access properties of single objects (not arrays) in paragraphs and text:
 
 ```
 Customer: {{user.name}}
@@ -183,7 +264,17 @@ const data = {
 };
 ```
 
-**Note:** Use this for single objects. For arrays that need to expand into table rows, use the table variable syntax `{{arrayName.field}}` instead.
+**Note:** Object properties work everywhere — paragraphs, tables, headers, footers. The library distinguishes between arrays (for table expansion) and objects (for direct substitution) automatically.
+
+### Table Type Detection Summary
+
+The library automatically detects the table type based on the variable layout:
+
+| Layout                                                        | Detection            | Behavior                                           |
+| ------------------------------------------------------------- | -------------------- | -------------------------------------------------- |
+| 1 row with `{{array.field}}` variables                        | **Standard table**   | Clones the template **row** for each array item    |
+| Multiple rows with `{{array.field}}` for the **same** array   | **Transposed table** | Clones the template **column** for each array item |
+| Multiple rows with `{{obj.field}}` for **different** objects   | **Grid table**       | Direct substitution, no expansion                  |
 
 ### Conditional Blocks
 

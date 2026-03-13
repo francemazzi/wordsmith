@@ -107,7 +107,13 @@ export const processTransposedTable = (
 
   const { arrayName, templateColumnIndex } = info;
   const arrayData = data[arrayName];
-  const isEmpty = !Array.isArray(arrayData) || arrayData.length === 0;
+
+  // If data is not an array (e.g. an object), leave the table for replaceVariables
+  if (!Array.isArray(arrayData)) {
+    return table;
+  }
+
+  const isEmpty = arrayData.length === 0;
 
   const newRows = rows.map((row) => {
     const cells = extractCells(row);
@@ -206,7 +212,12 @@ export const processTable = (table: any, data: ReplaceData): any => {
 
   const arrayData = data[arrayName];
 
-  if (!Array.isArray(arrayData) || arrayData.length === 0) {
+  // If data is not an array (e.g. an object), leave the table for replaceVariables
+  if (!Array.isArray(arrayData)) {
+    return table;
+  }
+
+  if (arrayData.length === 0) {
     const newRows = rows.filter((_, index) => index !== templateRowIndex);
     return {
       ...table,
