@@ -138,6 +138,14 @@ export const updateCellText = (cell: any, newText: string): any => {
   };
 };
 
+export const extractGridCols = (table: any): any[] => {
+  const tblGrid = table["w:tblGrid"];
+  if (!tblGrid) return [];
+  const gridCols = tblGrid["w:gridCol"];
+  if (!gridCols) return [];
+  return Array.isArray(gridCols) ? gridCols : [gridCols];
+};
+
 /**
  * Get the root element from a header or footer XML document
  * Headers use w:hdr, footers use w:ftr

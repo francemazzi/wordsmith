@@ -30,4 +30,10 @@ export type ExtractResult = {
 
 export type ReplaceData = Record<string, any>;
 
+export type TransposedTableInfo = {
+  transposed: boolean;
+  arrayName?: string;
+  templateColumnIndex?: number;
+};
+
 export type DocxFiles = Record<string, string>;
