@@ -45,10 +45,14 @@ export const parseVariable = (varName: string): Variable => {
   };
 };
 
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const replaceVariable =
   (key: string, value: any) =>
   (text: string): string => {
-    const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
+    const safeKey = escapeRegExp(key);
+    const regex = new RegExp(`\\{\\{\\s*${safeKey}\\s*\\}\\}`, "g");
     return text.replace(regex, toString(value));
   };
 
@@ -121,15 +125,50 @@ const NEGATED_CHOICES: Record<string, string> = {
   false: "true",
 };
 
+const expandDotNotationData = (data: Record<string, any>): Record<string, any> => {
+  const expanded = { ...data };
+
+  Object.entries(data).forEach(([path, value]) => {
+    if (!path.includes(".")) return;
+
+    const parts = path.split(".").filter(Boolean);
+    if (parts.length < 2) return;
+
+    let cursor: any = expanded;
+    for (let i = 0; i < parts.length - 1; i += 1) {
+      const key = parts[i];
+      const current = cursor[key];
+
+      if (current === undefined) {
+        cursor[key] = {};
+      } else if (
+        typeof current !== "object" ||
+        current === null ||
+        Array.isArray(current)
+      ) {
+        return;
+      }
+
+      cursor = cursor[key];
+    }
+
+    const leafKey = parts[parts.length - 1];
+    if (cursor[leafKey] === undefined) {
+      cursor[leafKey] = value;
+    }
+  });
+
+  return expanded;
+};
+
 export const normalizeQuestionnaireData = (
   data: Record<string, any>
 ): Record<string, any> => {
-  const questionnaire = data.q;
+  const normalizedData = expandDotNotationData(data);
+  const questionnaire = normalizedData.q;
   if (!questionnaire || typeof questionnaire !== "object" || Array.isArray(questionnaire)) {
-    return data;
+    return normalizedData;
   }
-
-  const normalizedData = { ...data };
 
   Object.entries(questionnaire).forEach(([questionName, rawValue]) => {
     if (rawValue === undefined || rawValue === null || typeof rawValue === "object") {

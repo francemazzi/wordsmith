@@ -43,4 +43,5 @@ export type TransposedTableInfo = {
   templateColumnIndex?: number;
 };
 
-export type DocxFiles = Record<string, string>;
+export type DocxFileContent = string | Buffer;
+export type DocxFiles = Record<string, DocxFileContent>;

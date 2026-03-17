@@ -92,6 +92,12 @@ describe("Variable Functions", () => {
       const result = replaceVariable("active", true)(text);
       expect(result).toBe("Active: true");
     });
+
+    it("should escape regex characters in key names", () => {
+      const text = "Value: {{a+b}}";
+      const result = replaceVariable("a+b", "ok")(text);
+      expect(result).toBe("Value: ok");
+    });
   });
 
   describe("replaceVariables", () => {
@@ -165,6 +171,16 @@ describe("Variable Functions", () => {
         si: "✓",
         no: "-",
       });
+    });
+
+    it("should expand dot-notation keys", () => {
+      const normalized = normalizeQuestionnaireData({
+        "firma.DG": "Mario",
+        "q.validita": "si",
+      });
+
+      expect(normalized.firma).toEqual({ DG: "Mario" });
+      expect(normalized.q).toEqual({ validita: "si" });
     });
   });
 

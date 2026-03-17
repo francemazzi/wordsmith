@@ -1,6 +1,16 @@
 import JSZip from "jszip";
 import type { DocxFiles } from "./types.js";
 
+const isXmlEntry = (filename: string): boolean =>
+  filename.endsWith(".xml") || filename.endsWith(".rels");
+
+const readZipEntry = async (filename: string, file: JSZip.JSZipObject) => {
+  if (isXmlEntry(filename)) {
+    return await file.async("text");
+  }
+  return await file.async("nodebuffer");
+};
+
 export const unzip = async (buffer: Buffer): Promise<DocxFiles> => {
   try {
     const zip = await JSZip.loadAsync(buffer);
@@ -8,7 +18,7 @@ export const unzip = async (buffer: Buffer): Promise<DocxFiles> => {
 
     for (const [filename, file] of Object.entries(zip.files)) {
       if (!file.dir) {
-        files[filename] = await file.async("text");
+        files[filename] = await readZipEntry(filename, file);
       }
     }
 
@@ -19,15 +29,25 @@ export const unzip = async (buffer: Buffer): Promise<DocxFiles> => {
 };
 
 export const getDocumentXml = (files: DocxFiles): string => {
-  const documentXml = files["word/document.xml"];
+  const documentXml = files["word/document.xml"] as string | undefined;
   if (!documentXml) {
     throw new Error("Invalid .docx file: word/document.xml not found");
+  }
+  if (typeof documentXml !== "string") {
+    throw new Error("Invalid .docx file: word/document.xml is not text");
   }
   return documentXml;
 };
 
 export const getRelationsXml = (files: DocxFiles): string => {
-  return files["word/_rels/document.xml.rels"] || "";
+  const rels = files["word/_rels/document.xml.rels"];
+  if (!rels) return "";
+  if (typeof rels !== "string") {
+    throw new Error(
+      "Invalid .docx file: word/_rels/document.xml.rels is not text"
+    );
+  }
+  return rels;
 };
 
 export const updateDocumentXml =
@@ -49,7 +69,13 @@ const FOOTER_PATTERN = /^word\/footer\d+\.xml$/;
 export const getHeaderFiles = (files: DocxFiles): Record<string, string> => {
   return Object.entries(files)
     .filter(([name]) => HEADER_PATTERN.test(name))
-    .reduce((acc, [name, content]) => ({ ...acc, [name]: content }), {});
+    .reduce<Record<string, string>>((acc, [name, content]) => {
+      if (typeof content !== "string") {
+        throw new Error(`Invalid DOCX header entry (binary): ${name}`);
+      }
+      acc[name] = content;
+      return acc;
+    }, {});
 };
 
 /**
@@ -60,7 +86,13 @@ export const getHeaderFiles = (files: DocxFiles): Record<string, string> => {
 export const getFooterFiles = (files: DocxFiles): Record<string, string> => {
   return Object.entries(files)
     .filter(([name]) => FOOTER_PATTERN.test(name))
-    .reduce((acc, [name, content]) => ({ ...acc, [name]: content }), {});
+    .reduce<Record<string, string>>((acc, [name, content]) => {
+      if (typeof content !== "string") {
+        throw new Error(`Invalid DOCX footer entry (binary): ${name}`);
+      }
+      acc[name] = content;
+      return acc;
+    }, {});
 };
 
 /**
