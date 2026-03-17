@@ -28,7 +28,14 @@ export type ExtractResult = {
   tables: Table[];
 };
 
-export type ReplaceData = Record<string, any>;
+export type QuestionnaireAnswers = Record<
+  string,
+  string | number | boolean | Array<string | number | boolean>
+>;
+
+export type ReplaceData = Record<string, any> & {
+  q?: QuestionnaireAnswers;
+};
 
 export type TransposedTableInfo = {
   transposed: boolean;

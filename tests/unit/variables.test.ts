@@ -1,6 +1,9 @@
 import {
   extractVariables,
+  extractQuestionnaireVariables,
+  normalizeQuestionnaireData,
   parseVariable,
+  replaceQuestionnaireDsl,
   replaceVariable,
   replaceVariables,
   hasTableVariables,
@@ -31,6 +34,22 @@ describe("Variable Functions", () => {
       const text = "No variables here";
       const variables = extractVariables(text);
       expect(variables).toEqual([]);
+    });
+
+    it("should extract questionnaire DSL variables", () => {
+      const text =
+        'Q1 {{q.apportoModifiche|choice:si|mark:"X"}} Q2 {{q.validita|choice:no}}';
+      const variables = extractVariables(text);
+      expect(variables).toEqual(["q.apportoModifiche", "q.validita"]);
+    });
+  });
+
+  describe("extractQuestionnaireVariables", () => {
+    it("should extract only questionnaire DSL variables", () => {
+      const text =
+        "Legacy {{name}} and DSL {{q.apportoModifiche|choice:si|mark:X}}";
+      const variables = extractQuestionnaireVariables(text);
+      expect(variables).toEqual(["q.apportoModifiche"]);
     });
   });
 
@@ -89,6 +108,63 @@ describe("Variable Functions", () => {
         items: [{ x: 1 }],
       })(text);
       expect(result).toBe("Hello Mario");
+    });
+
+    it("should replace questionnaire DSL placeholders", () => {
+      const text =
+        'Si {{q.apportoModifiche|choice:si|mark:"X"}} No {{q.apportoModifiche|choice:no|mark:"X"}}';
+      const result = replaceVariables({
+        q: { apportoModifiche: "si" },
+      })(text);
+      expect(result).toBe("Si X No ");
+    });
+
+    it("should replace questionnaire DSL with default marker", () => {
+      const text = "Selected: {{q.validita|choice:no}}";
+      const result = replaceVariables({
+        q: { validita: "no" },
+      })(text);
+      expect(result).toBe("Selected: X");
+    });
+  });
+
+  describe("replaceQuestionnaireDsl", () => {
+    it("should support multi-select values", () => {
+      const text =
+        'A {{q.flags|choice:a|mark:"X"}} B {{q.flags|choice:b|mark:"X"}}';
+      const result = replaceQuestionnaireDsl({
+        q: { flags: ["b"] },
+      })(text);
+      expect(result).toBe("A  B X");
+    });
+  });
+
+  describe("normalizeQuestionnaireData", () => {
+    it("should derive legacy yes/no fields from q answers", () => {
+      const normalized = normalizeQuestionnaireData({
+        q: { apportoModifiche: "si", validita: "no" },
+      });
+
+      expect(normalized.apportoModifiche).toEqual({
+        si: "X",
+        no: "",
+      });
+      expect(normalized.validita).toEqual({
+        no: "X",
+        si: "",
+      });
+    });
+
+    it("should preserve existing legacy values", () => {
+      const normalized = normalizeQuestionnaireData({
+        q: { apportoModifiche: "si" },
+        apportoModifiche: { si: "✓", no: "-" },
+      });
+
+      expect(normalized.apportoModifiche).toEqual({
+        si: "✓",
+        no: "-",
+      });
     });
   });
 

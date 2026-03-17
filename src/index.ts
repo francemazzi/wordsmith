@@ -23,7 +23,11 @@ import {
   extractCells,
   extractTextFromCell,
 } from "./xml.js";
-import { getAllVariables, replaceVariables } from "./variables.js";
+import {
+  getAllVariables,
+  normalizeQuestionnaireData,
+  replaceVariables,
+} from "./variables.js";
 import { replaceInAllTables, replaceInHeaderFooterTables } from "./tables.js";
 import {
   processConditionals,
@@ -162,26 +166,27 @@ export const replace = async (
   data: ReplaceData
 ): Promise<Buffer> => {
   const buffer = await read(source);
+  const normalizedData = normalizeQuestionnaireData(data);
 
   const files = await unzip(buffer);
 
   // Process main document
   const documentXml = getDocumentXml(files);
   let xmlDoc = parseXml(documentXml);
-  xmlDoc = replaceInAllTables(xmlDoc, data);
+  xmlDoc = replaceInAllTables(xmlDoc, normalizedData);
   let processedXml = xmlToString(xmlDoc);
-  processedXml = processConditionals(processedXml, data);
-  processedXml = replaceVariables(data)(processedXml);
+  processedXml = processConditionals(processedXml, normalizedData);
+  processedXml = replaceVariables(normalizedData)(processedXml);
 
   // Process headers
   const headerFiles = getHeaderFiles(files);
   const processedHeaders: Record<string, string> = {};
   for (const [filename, content] of Object.entries(headerFiles)) {
     let headerXmlDoc = parseXml(content);
-    headerXmlDoc = replaceInHeaderFooterTables(headerXmlDoc, data);
+    headerXmlDoc = replaceInHeaderFooterTables(headerXmlDoc, normalizedData);
     let processedHeaderXml = xmlToString(headerXmlDoc);
-    processedHeaderXml = processConditionals(processedHeaderXml, data);
-    processedHeaderXml = replaceVariables(data)(processedHeaderXml);
+    processedHeaderXml = processConditionals(processedHeaderXml, normalizedData);
+    processedHeaderXml = replaceVariables(normalizedData)(processedHeaderXml);
     processedHeaders[filename] = processedHeaderXml;
   }
 
@@ -190,10 +195,10 @@ export const replace = async (
   const processedFooters: Record<string, string> = {};
   for (const [filename, content] of Object.entries(footerFiles)) {
     let footerXmlDoc = parseXml(content);
-    footerXmlDoc = replaceInHeaderFooterTables(footerXmlDoc, data);
+    footerXmlDoc = replaceInHeaderFooterTables(footerXmlDoc, normalizedData);
     let processedFooterXml = xmlToString(footerXmlDoc);
-    processedFooterXml = processConditionals(processedFooterXml, data);
-    processedFooterXml = replaceVariables(data)(processedFooterXml);
+    processedFooterXml = processConditionals(processedFooterXml, normalizedData);
+    processedFooterXml = replaceVariables(normalizedData)(processedFooterXml);
     processedFooters[filename] = processedFooterXml;
   }
 
@@ -222,6 +227,7 @@ export const process = async (
 
 export type {
   ExtractResult,
+  QuestionnaireAnswers,
   ReplaceData,
   Variable,
   Table,
@@ -231,4 +237,10 @@ export type {
 
 export { parseVariable, extractVariables } from "./variables.js";
 export { DEFAULT_PATTERN, TABLE_VARIABLE_PATTERN } from "./variables.js";
+export {
+  QUESTIONNAIRE_DSL_PATTERN,
+  extractQuestionnaireVariables,
+  normalizeQuestionnaireData,
+  replaceQuestionnaireDsl,
+} from "./variables.js";
 export { processConditionals, evaluateCondition } from "./conditionals.js";

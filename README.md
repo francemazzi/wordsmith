@@ -15,6 +15,7 @@
 - 📊 **Dynamic tables** - Expand table rows or columns from arrays
 - 🔄 **Transposed tables** - Support for tables with headers in the first column
 - 🧮 **Grid tables** - Tables with headers on both first row and first column
+- ☑️ **Closed questionnaire DSL** - Native support for yes/no and single-choice markers
 - 🎯 **Functional design** - Pure functions, composable, testable
 - ⚡️ **TypeScript support** - Full type definitions included
 - 🚀 **Zero configuration** - Works out of the box
@@ -237,6 +238,104 @@ await replace("./checklist.docx", data);
 ### Special Variables
 
 - `{{arrayName.#}}` or `{{arrayName.index}}` - Row/column number (1, 2, 3...)
+
+### Closed Questionnaires (Yes/No and single choice)
+
+For closed questions, you can use the questionnaire DSL syntax:
+
+```text
+{{q.apportoModifiche|choice:si|mark:"X"}}
+{{q.apportoModifiche|choice:no|mark:"X"}}
+{{q.validita|choice:si|mark:"X"}}
+```
+
+- `q.apportoModifiche` is the answer path
+- `choice:si` is the option that should match
+- `mark:"X"` is optional (default mark is `X`)
+
+**Input data:**
+
+```javascript
+const data = {
+  q: {
+    apportoModifiche: "si",
+    validita: "no",
+  },
+};
+```
+
+With this data:
+
+- `{{q.apportoModifiche|choice:si|mark:"X"}}` -> `X`
+- `{{q.apportoModifiche|choice:no|mark:"X"}}` -> ``
+- `{{q.validita|choice:no}}` -> `X` (default mark)
+
+### Migration from Legacy Yes/No Placeholders
+
+Legacy placeholders remain supported:
+
+```text
+{{apportoModifiche.si}}
+{{apportoModifiche.no}}
+```
+
+When you provide `q` answers, the library automatically derives legacy yes/no fields for compatibility:
+
+```javascript
+const data = {
+  q: {
+    apportoModifiche: "si",
+  },
+};
+
+// Internally derives:
+// apportoModifiche.si = "X"
+// apportoModifiche.no = ""
+```
+
+This lets you migrate templates gradually:
+
+1. Keep existing templates unchanged (legacy placeholders still work)
+2. Start writing new templates with questionnaire DSL
+3. Move old templates over when convenient
+
+### Real-world Template Example (RAPPORTO MENSILE)
+
+If your template has cells like:
+
+```text
+Sono da apportare modifiche? {{apportoModifiche.si}} {{apportoModifiche.no}}
+È da considerarsi valida ad oggi? {{validita.si}} {{validita.no}}
+```
+
+you can now pass only one answer per question:
+
+```javascript
+const data = {
+  q: {
+    apportoModifiche: "si",
+    validita: "no",
+  },
+};
+
+await replace("./M 5.6.MQ.1C - RAPPORTO MENSILE.docx", data);
+```
+
+Resulting markers:
+
+- `{{apportoModifiche.si}}` -> `X`
+- `{{apportoModifiche.no}}` -> ``
+- `{{validita.si}}` -> ``
+- `{{validita.no}}` -> `X`
+
+And if you migrate that table to DSL placeholders, the same input still works:
+
+```text
+{{q.apportoModifiche|choice:si|mark:"X"}}
+{{q.apportoModifiche|choice:no|mark:"X"}}
+{{q.validita|choice:si|mark:"X"}}
+{{q.validita|choice:no|mark:"X"}}
+```
 
 ### Object Property Access
 

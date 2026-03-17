@@ -2,6 +2,8 @@ import type { Variable } from "./types.js";
 import { toString } from "./utils.js";
 
 export const DEFAULT_PATTERN = /\{\{(\s*[\w.]+\s*)\}\}/g;
+export const QUESTIONNAIRE_DSL_PATTERN =
+  /\{\{\s*([\w.]+)\s*\|\s*choice\s*:\s*([^|}]+?)\s*(?:\|\s*mark\s*:\s*(?:"([^"]*)"|'([^']*)'|([^|}]+)))?\s*\}\}/g;
 
 export const TABLE_VARIABLE_PATTERN = /\{\{(\w+)\.(\w+)\}\}/g;
 
@@ -13,7 +15,14 @@ export const findVariables =
   };
 
 export const extractVariables = (text: string): string[] => {
-  return findVariables(DEFAULT_PATTERN)(text);
+  const defaultVariables = findVariables(DEFAULT_PATTERN)(text);
+  const questionnaireVariables = extractQuestionnaireVariables(text);
+  return [...new Set([...defaultVariables, ...questionnaireVariables])];
+};
+
+export const extractQuestionnaireVariables = (text: string): string[] => {
+  const matches = text.matchAll(QUESTIONNAIRE_DSL_PATTERN);
+  return [...new Set([...matches].map((m) => m[1].trim()))];
 };
 
 export const parseVariable = (varName: string): Variable => {
@@ -46,7 +55,7 @@ export const replaceVariable =
 export const replaceVariables =
   (data: Record<string, any>) =>
   (text: string): string => {
-    let result = text;
+    let result = replaceQuestionnaireDsl(data)(text);
 
     const objectVarPattern = /\{\{(\w+)\.(\w+)\}\}/g;
     result = result.replace(objectVarPattern, (match, objectName, propName) => {
@@ -63,6 +72,99 @@ export const replaceVariables =
       return replaceVariable(key, value)(acc);
     }, result);
   };
+
+const normalizeChoiceValue = (value: unknown): string => {
+  if (value === undefined || value === null) return "";
+  return String(value).trim().toLowerCase();
+};
+
+const getValueFromPath = (data: Record<string, any>, path: string): any => {
+  return path.split(".").reduce((acc: any, key) => {
+    if (acc === undefined || acc === null) return undefined;
+    return acc[key];
+  }, data);
+};
+
+const matchesChoice = (value: unknown, choice: string): boolean => {
+  const normalizedChoice = normalizeChoiceValue(choice);
+
+  if (Array.isArray(value)) {
+    return value.some((item) => normalizeChoiceValue(item) === normalizedChoice);
+  }
+
+  return normalizeChoiceValue(value) === normalizedChoice;
+};
+
+export const replaceQuestionnaireDsl =
+  (data: Record<string, any>) =>
+  (text: string): string => {
+    return text.replace(
+      QUESTIONNAIRE_DSL_PATTERN,
+      (match, path, choice, markDoubleQuoted, markSingleQuoted, markPlain) => {
+        const selectedValue = getValueFromPath(data, path.trim());
+        if (!matchesChoice(selectedValue, choice)) {
+          return "";
+        }
+
+        const mark =
+          markDoubleQuoted ?? markSingleQuoted ?? markPlain?.trim() ?? "X";
+        return toString(mark);
+      }
+    );
+  };
+
+const NEGATED_CHOICES: Record<string, string> = {
+  si: "no",
+  no: "si",
+  yes: "no",
+  true: "false",
+  false: "true",
+};
+
+export const normalizeQuestionnaireData = (
+  data: Record<string, any>
+): Record<string, any> => {
+  const questionnaire = data.q;
+  if (!questionnaire || typeof questionnaire !== "object" || Array.isArray(questionnaire)) {
+    return data;
+  }
+
+  const normalizedData = { ...data };
+
+  Object.entries(questionnaire).forEach(([questionName, rawValue]) => {
+    if (rawValue === undefined || rawValue === null || typeof rawValue === "object") {
+      return;
+    }
+
+    const rawChoice = String(rawValue).trim();
+    if (!rawChoice) return;
+
+    const normalizedChoice = normalizeChoiceValue(rawChoice);
+    const existingLegacy = normalizedData[questionName];
+    const legacyObject =
+      existingLegacy &&
+      typeof existingLegacy === "object" &&
+      !Array.isArray(existingLegacy)
+        ? { ...existingLegacy }
+        : {};
+
+    if (legacyObject[rawChoice] === undefined) {
+      legacyObject[rawChoice] = "X";
+    }
+    if (legacyObject[normalizedChoice] === undefined) {
+      legacyObject[normalizedChoice] = "X";
+    }
+
+    const negated = NEGATED_CHOICES[normalizedChoice];
+    if (negated && legacyObject[negated] === undefined) {
+      legacyObject[negated] = "";
+    }
+
+    normalizedData[questionName] = legacyObject;
+  });
+
+  return normalizedData;
+};
 
 export const replaceInText = (
   text: string,
