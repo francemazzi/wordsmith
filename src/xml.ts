@@ -41,6 +41,14 @@ export const xmlToString = (xmlObject: any): string => {
   }
 };
 
+export const extractRunText = (run: any): string => {
+  const textNode = run["w:t"];
+  if (!textNode) return "";
+  if (typeof textNode === "string") return textNode;
+  if (textNode["#text"]) return textNode["#text"];
+  return "";
+};
+
 export const extractTextFromParagraph = (paragraph: any): string => {
   if (!paragraph) return "";
 
@@ -49,15 +57,7 @@ export const extractTextFromParagraph = (paragraph: any): string => {
 
   const runArray = Array.isArray(runs) ? runs : [runs];
 
-  return runArray
-    .map((run: any) => {
-      const textNode = run["w:t"];
-      if (!textNode) return "";
-      if (typeof textNode === "string") return textNode;
-      if (textNode["#text"]) return textNode["#text"];
-      return "";
-    })
-    .join("");
+  return runArray.map(extractRunText).join("");
 };
 
 export const extractParagraphs = (xmlDoc: any): any[] => {

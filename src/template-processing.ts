@@ -4,32 +4,103 @@ import { replaceVariables } from "./variables.js";
 import {
   extractCells,
   extractRows,
+  extractRunText,
   extractTextFromParagraph,
   getHeaderFooterRoot,
   getHeaderFooterRootKey,
-  updateParagraphText,
 } from "./xml.js";
 
 const hasTemplateToken = (text: string): boolean =>
   text.includes("{{") && text.includes("}}");
+
+const hasPartialToken = (text: string): boolean =>
+  (text.includes("{{") && !text.includes("}}")) ||
+  (!text.includes("{{") && text.includes("}}"));
 
 const processTemplateText = (text: string, data: ReplaceData): string => {
   const withConditionals = processConditionals(text, data);
   return replaceVariables(data)(withConditionals);
 };
 
+const updateRunText = (run: any, newText: string): any => ({
+  ...run,
+  "w:t": {
+    "@_xml:space": "preserve",
+    "#text": newText,
+  },
+});
+
+/**
+ * Heal split tokens across adjacent runs.
+ * When Word splits {{varName}} across multiple runs (e.g., "{{var" in run1 and "Name}}" in run2),
+ * merge only those specific runs while preserving the first run's formatting.
+ */
+const healSplitTokenRuns = (runs: any[]): any[] => {
+  const result: any[] = [];
+  let i = 0;
+
+  while (i < runs.length) {
+    const text = extractRunText(runs[i]);
+
+    if (hasPartialToken(text) && text.includes("{{")) {
+      // Start of a split token — merge forward until we close all open tokens
+      let merged = text;
+      let j = i + 1;
+      while (j < runs.length && !hasTemplateToken(merged)) {
+        merged += extractRunText(runs[j]);
+        j++;
+      }
+      // If we found a complete token, create a merged run with first run's formatting
+      if (hasTemplateToken(merged)) {
+        result.push(updateRunText(runs[i], merged));
+        i = j;
+      } else {
+        // Could not heal — keep original runs
+        result.push(runs[i]);
+        i++;
+      }
+    } else {
+      result.push(runs[i]);
+      i++;
+    }
+  }
+
+  return result;
+};
+
 const processParagraph = (paragraph: any, data: ReplaceData): any => {
-  const originalText = extractTextFromParagraph(paragraph);
+  const runs = paragraph["w:r"];
+  if (!runs) return paragraph;
+
+  const runArray = Array.isArray(runs) ? runs : [runs];
+  const originalText = runArray.map(extractRunText).join("");
+
   if (!originalText || !hasTemplateToken(originalText)) {
     return paragraph;
   }
 
-  const processedText = processTemplateText(originalText, data);
-  if (processedText === originalText) {
-    return paragraph;
-  }
+  // Step 1: Heal split tokens (merge only runs that split a {{...}} token)
+  const healedRuns = healSplitTokenRuns(runArray);
 
-  return updateParagraphText(paragraph, processedText);
+  // Step 2: Process each run individually, preserving formatting of untouched runs
+  let anyChanged = false;
+  const processedRuns = healedRuns.map((run) => {
+    const runText = extractRunText(run);
+    if (!runText || !hasTemplateToken(runText)) return run;
+
+    const processed = processTemplateText(runText, data);
+    if (processed === runText) return run;
+
+    anyChanged = true;
+    return updateRunText(run, processed);
+  });
+
+  if (!anyChanged) return paragraph;
+
+  return {
+    ...paragraph,
+    "w:r": processedRuns.length === 1 ? processedRuns[0] : processedRuns,
+  };
 };
 
 const processParagraphContainer = (

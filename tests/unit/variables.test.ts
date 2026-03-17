@@ -143,6 +143,30 @@ describe("Variable Functions", () => {
       })(text);
       expect(result).toBe("A  B X");
     });
+
+    it("should preserve token when variable is undefined", () => {
+      const text = '{{q.missing|choice:si|mark:"X"}}';
+      const result = replaceQuestionnaireDsl({})(text);
+      expect(result).toBe('{{q.missing|choice:si|mark:"X"}}');
+    });
+
+    it("should preserve token when parent object is missing", () => {
+      const text =
+        'Si {{q.answer|choice:si|mark:"X"}} No {{q.answer|choice:no|mark:"X"}}';
+      const result = replaceQuestionnaireDsl({ other: "value" })(text);
+      expect(result).toBe(
+        'Si {{q.answer|choice:si|mark:"X"}} No {{q.answer|choice:no|mark:"X"}}'
+      );
+    });
+
+    it("should replace with empty when variable exists but does not match", () => {
+      const text =
+        'Si {{q.answer|choice:si|mark:"X"}} No {{q.answer|choice:no|mark:"X"}}';
+      const result = replaceQuestionnaireDsl({
+        q: { answer: "si" },
+      })(text);
+      expect(result).toBe("Si X No ");
+    });
   });
 
   describe("normalizeQuestionnaireData", () => {

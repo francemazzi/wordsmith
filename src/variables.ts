@@ -106,6 +106,9 @@ export const replaceQuestionnaireDsl =
       QUESTIONNAIRE_DSL_PATTERN,
       (match, path, choice, markDoubleQuoted, markSingleQuoted, markPlain) => {
         const selectedValue = getValueFromPath(data, path.trim());
+        if (selectedValue === undefined) {
+          return match;
+        }
         if (!matchesChoice(selectedValue, choice)) {
           return "";
         }
