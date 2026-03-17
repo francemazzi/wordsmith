@@ -33,6 +33,10 @@ import {
   processConditionals,
   extractConditionalVariables,
 } from "./conditionals.js";
+import {
+  processInlineTemplateTokensInDocument,
+  processInlineTemplateTokensInHeaderFooter,
+} from "./template-processing.js";
 import type { ExtractResult, ReplaceData } from "./types.js";
 
 /**
@@ -174,6 +178,7 @@ export const replace = async (
   const documentXml = getDocumentXml(files);
   let xmlDoc = parseXml(documentXml);
   xmlDoc = replaceInAllTables(xmlDoc, normalizedData);
+  xmlDoc = processInlineTemplateTokensInDocument(xmlDoc, normalizedData);
   let processedXml = xmlToString(xmlDoc);
   processedXml = processConditionals(processedXml, normalizedData);
   processedXml = replaceVariables(normalizedData)(processedXml);
@@ -184,6 +189,10 @@ export const replace = async (
   for (const [filename, content] of Object.entries(headerFiles)) {
     let headerXmlDoc = parseXml(content);
     headerXmlDoc = replaceInHeaderFooterTables(headerXmlDoc, normalizedData);
+    headerXmlDoc = processInlineTemplateTokensInHeaderFooter(
+      headerXmlDoc,
+      normalizedData
+    );
     let processedHeaderXml = xmlToString(headerXmlDoc);
     processedHeaderXml = processConditionals(processedHeaderXml, normalizedData);
     processedHeaderXml = replaceVariables(normalizedData)(processedHeaderXml);
@@ -196,6 +205,10 @@ export const replace = async (
   for (const [filename, content] of Object.entries(footerFiles)) {
     let footerXmlDoc = parseXml(content);
     footerXmlDoc = replaceInHeaderFooterTables(footerXmlDoc, normalizedData);
+    footerXmlDoc = processInlineTemplateTokensInHeaderFooter(
+      footerXmlDoc,
+      normalizedData
+    );
     let processedFooterXml = xmlToString(footerXmlDoc);
     processedFooterXml = processConditionals(processedFooterXml, normalizedData);
     processedFooterXml = replaceVariables(normalizedData)(processedFooterXml);
