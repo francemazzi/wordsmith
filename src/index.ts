@@ -11,7 +11,6 @@ import {
 } from "./zip.js";
 import {
   parseXml,
-  xmlToString,
   extractParagraphs,
   extractTables,
   extractParagraphsFromHeaderFooter,
@@ -28,15 +27,14 @@ import {
   normalizeQuestionnaireData,
   replaceVariables,
 } from "./variables.js";
-import { replaceInAllTables, replaceInHeaderFooterTables } from "./tables.js";
 import {
   processConditionals,
   extractConditionalVariables,
 } from "./conditionals.js";
 import {
-  processInlineTemplateTokensInDocument,
-  processInlineTemplateTokensInHeaderFooter,
-} from "./template-processing.js";
+  processTablesInString,
+  healSplitTokensInString,
+} from "./string-processing.js";
 import type { ExtractResult, ReplaceData } from "./types.js";
 
 /**
@@ -174,12 +172,10 @@ export const replace = async (
 
   const files = await unzip(buffer);
 
-  // Process main document
+  // Process main document (string-based to preserve element order)
   const documentXml = getDocumentXml(files);
-  let xmlDoc = parseXml(documentXml);
-  xmlDoc = replaceInAllTables(xmlDoc, normalizedData);
-  xmlDoc = processInlineTemplateTokensInDocument(xmlDoc, normalizedData);
-  let processedXml = xmlToString(xmlDoc);
+  let processedXml = processTablesInString(documentXml, normalizedData);
+  processedXml = healSplitTokensInString(processedXml);
   processedXml = processConditionals(processedXml, normalizedData);
   processedXml = replaceVariables(normalizedData)(processedXml);
 
@@ -187,32 +183,22 @@ export const replace = async (
   const headerFiles = getHeaderFiles(files);
   const processedHeaders: Record<string, string> = {};
   for (const [filename, content] of Object.entries(headerFiles)) {
-    let headerXmlDoc = parseXml(content);
-    headerXmlDoc = replaceInHeaderFooterTables(headerXmlDoc, normalizedData);
-    headerXmlDoc = processInlineTemplateTokensInHeaderFooter(
-      headerXmlDoc,
-      normalizedData
-    );
-    let processedHeaderXml = xmlToString(headerXmlDoc);
-    processedHeaderXml = processConditionals(processedHeaderXml, normalizedData);
-    processedHeaderXml = replaceVariables(normalizedData)(processedHeaderXml);
-    processedHeaders[filename] = processedHeaderXml;
+    let processed = processTablesInString(content, normalizedData);
+    processed = healSplitTokensInString(processed);
+    processed = processConditionals(processed, normalizedData);
+    processed = replaceVariables(normalizedData)(processed);
+    processedHeaders[filename] = processed;
   }
 
   // Process footers
   const footerFiles = getFooterFiles(files);
   const processedFooters: Record<string, string> = {};
   for (const [filename, content] of Object.entries(footerFiles)) {
-    let footerXmlDoc = parseXml(content);
-    footerXmlDoc = replaceInHeaderFooterTables(footerXmlDoc, normalizedData);
-    footerXmlDoc = processInlineTemplateTokensInHeaderFooter(
-      footerXmlDoc,
-      normalizedData
-    );
-    let processedFooterXml = xmlToString(footerXmlDoc);
-    processedFooterXml = processConditionals(processedFooterXml, normalizedData);
-    processedFooterXml = replaceVariables(normalizedData)(processedFooterXml);
-    processedFooters[filename] = processedFooterXml;
+    let processed = processTablesInString(content, normalizedData);
+    processed = healSplitTokensInString(processed);
+    processed = processConditionals(processed, normalizedData);
+    processed = replaceVariables(normalizedData)(processed);
+    processedFooters[filename] = processed;
   }
 
   // Update all files
