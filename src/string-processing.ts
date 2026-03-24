@@ -95,8 +95,10 @@ export function processTablesInString(
         result.substring(0, block.start) +
         rebuiltTable +
         result.substring(block.end);
-    } catch {
-      // If parsing fails for this table, skip it
+    } catch (err) {
+      console.warn(
+        `[wordsmith-ts] Warning: failed to process table, skipping. ${err instanceof Error ? err.message : err}`
+      );
       continue;
     }
   }

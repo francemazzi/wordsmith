@@ -1,6 +1,6 @@
 {
   "name": "wordsmith-ts",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "A lightweight functional library to extract and replace variables in Word (.docx) files",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -42,6 +42,14 @@
   ],
   "author": "Francesco",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/francemazzi/wordsmith.git"
+  },
+  "bugs": {
+    "url": "https://github.com/francemazzi/wordsmith/issues"
+  },
+  "homepage": "https://github.com/francemazzi/wordsmith#readme",
   "dependencies": {
     "fast-xml-parser": "^4.3.2",
     "jszip": "^3.10.1"

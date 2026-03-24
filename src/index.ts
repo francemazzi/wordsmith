@@ -167,6 +167,10 @@ export const replace = async (
   source: string | Buffer,
   data: ReplaceData
 ): Promise<Buffer> => {
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid data: expected a non-null object");
+  }
+
   const buffer = await read(source);
   const normalizedData = normalizeQuestionnaireData(data);
 

@@ -4,6 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/wordsmith-ts.svg?style=flat-square)](https://www.npmjs.com/package/wordsmith-ts)
 [![License](https://img.shields.io/npm/l/wordsmith-ts.svg?style=flat-square)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/francemazzi/wordsmith?style=flat-square)](https://github.com/francemazzi/wordsmith)
 
 ---
 
@@ -37,7 +38,7 @@ pnpm add wordsmith-ts
 
 ### Module Compatibility
 
-**wordsmith-ts** supporta sia **ES Modules (ESM)** che **CommonJS (CJS)**, rendendolo compatibile con qualsiasi tipo di progetto Node.js.
+**wordsmith-ts** supports both **ES Modules (ESM)** and **CommonJS (CJS)**, making it compatible with any Node.js project.
 
 #### ES Modules (ESM)
 
@@ -55,7 +56,7 @@ const { extract, replace, process } = require("wordsmith-ts");
 // Your code here...
 ```
 
-Il pacchetto rileva automaticamente il sistema di moduli del tuo progetto e carica il formato appropriato.
+The package automatically detects your project's module system and loads the appropriate format.
 
 ---
 
@@ -506,6 +507,48 @@ await process(
 
 ---
 
+### Advanced API
+
+These lower-level functions are also exported for advanced use cases:
+
+```typescript
+import {
+  parseVariable,        // Parse a variable name into { name, isTableVariable, arrayName, fieldName }
+  extractVariables,     // Extract all variable names from a text string
+  processConditionals,  // Process {{#if}}...{{/if}} blocks in a text string
+  evaluateCondition,    // Evaluate a value as truthy/falsy (same rules as conditional blocks)
+  DEFAULT_PATTERN,             // RegExp for {{variable}} matching
+  TABLE_VARIABLE_PATTERN,      // RegExp for {{array.field}} matching
+  QUESTIONNAIRE_DSL_PATTERN,   // RegExp for {{q.field|choice:x}} matching
+  extractQuestionnaireVariables,
+  normalizeQuestionnaireData,
+  replaceQuestionnaireDsl,
+} from "wordsmith-ts";
+```
+
+---
+
+## ⚠️ Error Handling
+
+The library throws descriptive errors for invalid input:
+
+| Scenario                     | Error message                                      |
+| ---------------------------- | -------------------------------------------------- |
+| File not found               | `File not found: {path}`                           |
+| Invalid buffer               | `Invalid buffer provided`                          |
+| Invalid data                 | `Invalid data: expected a non-null object`         |
+| Corrupt .docx (missing XML)  | `Invalid .docx file: word/document.xml not found`  |
+| Malformed XML                | `Failed to parse XML: {details}`                   |
+
+**Missing variables** are left unchanged in the output (e.g. `{{unknown}}` stays as-is).
+
+**Known limitations:**
+
+- When Word splits a `{{variable}}` across multiple XML runs with different formatting, the library heals the token but applies the formatting of the first run to the entire replaced text.
+- Very large documents (thousands of tables) may increase memory usage since the entire file is processed in memory.
+
+---
+
 ## 💡 Advanced Usage
 
 ### Working with Buffers
@@ -515,19 +558,6 @@ import { readFile } from "fs/promises";
 
 const buffer = await readFile("./template.docx");
 const output = await replace(buffer, data);
-```
-
-### Functional Composition
-
-```javascript
-import { pipe } from "wordsmith-ts/utils";
-
-const processDocument = pipe(
-  readTemplate,
-  extractData,
-  enrichData,
-  replaceVariables
-);
 ```
 
 ### Multiple Tables
@@ -608,7 +638,7 @@ npm run build
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/wordsmith-ts.git
+git clone https://github.com/francemazzi/wordsmith.git
 
 # Install dependencies
 npm install
@@ -621,17 +651,6 @@ npm test
 
 # Watch mode for development
 npm run dev
-```
-
----
-
-## 📚 Examples
-
-Check the `examples/` directory for more usage examples:
-
-```bash
-cd examples
-node basic-usage.js
 ```
 
 ---
