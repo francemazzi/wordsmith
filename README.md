@@ -271,6 +271,39 @@ With this data:
 - `{{q.apportoModifiche|choice:no|mark:"X"}}` -> ``
 - `{{q.validita|choice:no}}` -> `X` (default mark)
 
+#### Checkbox / Rating Scale (unmark parameter)
+
+For checkbox-style templates where you need to show both checked and unchecked states, use the optional `unmark` parameter:
+
+```text
+{{q.punto1|choice:0|mark:"☑"|unmark:"☐"}} 0
+{{q.punto1|choice:1|mark:"☑"|unmark:"☐"}} 1
+{{q.punto1|choice:2|mark:"☑"|unmark:"☐"}} 2
+{{q.punto1|choice:3|mark:"☑"|unmark:"☐"}} 3
+{{q.punto1|choice:4|mark:"☑"|unmark:"☐"}} 4
+{{q.punto1|choice:5|mark:"☑"|unmark:"☐"}} 5
+```
+
+- `mark` — displayed when the data value **matches** the choice
+- `unmark` — displayed when the data value **does not match** (defaults to empty string if omitted, preserving backward compatibility)
+
+**Input data:**
+
+```javascript
+const data = {
+  q: {
+    punto1: 3,
+    punto2: 5,
+  },
+};
+```
+
+With this data (punto1 = 3):
+
+- `{{q.punto1|choice:3|mark:"☑"|unmark:"☐"}}` -> `☑`
+- `{{q.punto1|choice:0|mark:"☑"|unmark:"☐"}}` -> `☐`
+- All other choices -> `☐`
+
 ### Migration from Legacy Yes/No Placeholders
 
 Legacy placeholders remain supported:

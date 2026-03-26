@@ -3,7 +3,7 @@ import { toString } from "./utils.js";
 
 export const DEFAULT_PATTERN = /\{\{(\s*[\w.]+\s*)\}\}/g;
 export const QUESTIONNAIRE_DSL_PATTERN =
-  /\{\{\s*([\w.]+)\s*\|\s*choice\s*:\s*([^|}]+?)\s*(?:\|\s*mark\s*:\s*(?:"([^"]*)"|'([^']*)'|([^|}]+)))?\s*\}\}/g;
+  /\{\{\s*([\w.]+)\s*\|\s*choice\s*:\s*([^|}]+?)\s*(?:\|\s*mark\s*:\s*(?:"([^"]*)"|'([^']*)'|([^|}]+)))?\s*(?:\|\s*unmark\s*:\s*(?:"([^"]*)"|'([^']*)'|([^|}]+)))?\s*\}\}/g;
 
 export const TABLE_VARIABLE_PATTERN = /\{\{(\w+)\.(\w+)\}\}/g;
 
@@ -104,13 +104,15 @@ export const replaceQuestionnaireDsl =
   (text: string): string => {
     return text.replace(
       QUESTIONNAIRE_DSL_PATTERN,
-      (match, path, choice, markDoubleQuoted, markSingleQuoted, markPlain) => {
+      (match, path, choice, markDoubleQuoted, markSingleQuoted, markPlain, unmarkDoubleQuoted, unmarkSingleQuoted, unmarkPlain) => {
         const selectedValue = getValueFromPath(data, path.trim());
         if (selectedValue === undefined) {
           return match;
         }
         if (!matchesChoice(selectedValue, choice)) {
-          return "";
+          const unmark =
+            unmarkDoubleQuoted ?? unmarkSingleQuoted ?? unmarkPlain?.trim() ?? "";
+          return toString(unmark);
         }
 
         const mark =

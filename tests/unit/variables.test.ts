@@ -42,6 +42,13 @@ describe("Variable Functions", () => {
       const variables = extractVariables(text);
       expect(variables).toEqual(["q.apportoModifiche", "q.validita"]);
     });
+
+    it("should extract questionnaire DSL variables with unmark parameter", () => {
+      const text =
+        '{{q.score|choice:0|mark:"☑"|unmark:"☐"}} {{q.rating|choice:1|mark:"X"|unmark:"-"}}';
+      const variables = extractVariables(text);
+      expect(variables).toEqual(["q.score", "q.rating"]);
+    });
   });
 
   describe("extractQuestionnaireVariables", () => {
@@ -166,6 +173,51 @@ describe("Variable Functions", () => {
         q: { answer: "si" },
       })(text);
       expect(result).toBe("Si X No ");
+    });
+
+    it("should use unmark value when choice does not match", () => {
+      const text =
+        '{{q.score|choice:0|mark:"☑"|unmark:"☐"}} 0 {{q.score|choice:1|mark:"☑"|unmark:"☐"}} 1';
+      const result = replaceQuestionnaireDsl({
+        q: { score: 1 },
+      })(text);
+      expect(result).toBe("☐ 0 ☑ 1");
+    });
+
+    it("should output mark when choice matches with unmark present", () => {
+      const text = '{{q.rating|choice:3|mark:"☑"|unmark:"☐"}}';
+      const result = replaceQuestionnaireDsl({
+        q: { rating: 3 },
+      })(text);
+      expect(result).toBe("☑");
+    });
+
+    it("should default unmark to empty string when omitted (backward compat)", () => {
+      const text =
+        '{{q.answer|choice:si|mark:"X"}} {{q.answer|choice:no|mark:"X"}}';
+      const result = replaceQuestionnaireDsl({
+        q: { answer: "si" },
+      })(text);
+      expect(result).toBe("X ");
+    });
+
+    it("should support unmark with single quotes", () => {
+      const text = "{{q.val|choice:a|mark:'Y'|unmark:'N'}}";
+      const result = replaceQuestionnaireDsl({
+        q: { val: "b" },
+      })(text);
+      expect(result).toBe("N");
+    });
+
+    it("should handle checkbox-style rating scale", () => {
+      const choices = [0, 1, 2, 3, 4, 5];
+      const tokens = choices
+        .map((c) => `{{q.punto1|choice:${c}|mark:"☑"|unmark:"☐"}} ${c}`)
+        .join(" ");
+      const result = replaceQuestionnaireDsl({
+        q: { punto1: 3 },
+      })(tokens);
+      expect(result).toBe("☐ 0 ☐ 1 ☐ 2 ☑ 3 ☐ 4 ☐ 5");
     });
   });
 
